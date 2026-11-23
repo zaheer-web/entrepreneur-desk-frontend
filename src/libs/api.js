@@ -1,4 +1,9 @@
-const BASE = "/api";
+// API Base URL
+const BASE =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV
+    ? "http://localhost:5000/api"
+    : "https://entrepreneur-desk-backend.onrender.com/api");
 
 // Clerk token getter
 let tokenGetter = null;
@@ -30,7 +35,6 @@ export class ApiError extends Error {
 async function handle(res) {
   if (!res.ok) {
     const errBody = await res.json().catch(() => null);
-
     throw new ApiError(res.status, errBody);
   }
 
