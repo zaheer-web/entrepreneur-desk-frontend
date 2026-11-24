@@ -41,7 +41,7 @@ export default defineConfig({
 
     proxy: {
       "/api": {
-        target: process.env.VITE_API_PROXY || "http://localhost:5000",
+        target: process.env.VITE_API_PROXY || "https://entrepreneur-desk-backend.onrender.com",
         changeOrigin: true,
       },
     },
