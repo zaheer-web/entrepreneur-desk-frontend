@@ -1,8 +1,5 @@
-const BASE =
-  import.meta.env.VITE_API_URL ||
-  (import.meta.env.DEV
-    ? "https://entrepreneur-desk-backend.onrender.com/api"
-    : "https://entrepreneur-desk-backend.onrender.com/api");
+// Only .env value
+const BASE = import.meta.env.VITE_API_URL;
 
 // Clerk token getter
 let tokenGetter = null;
@@ -23,7 +20,6 @@ async function authHeaders() {
 export class ApiError extends Error {
   constructor(status, body) {
     super(`Request failed with ${status}`);
-
     this.name = "ApiError";
     this.status = status;
     this.body = body;
@@ -34,7 +30,6 @@ export class ApiError extends Error {
 async function handle(res) {
   if (!res.ok) {
     const errBody = await res.json().catch(() => null);
-
     throw new ApiError(res.status, errBody);
   }
 
