@@ -1,4 +1,8 @@
-const BASE = "/api";
+const BASE =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV
+    ? "http://localhost:5000/api"
+    : "https://entrepreneur-desk-backend.onrender.com/api");
 
 // Clerk token getter
 let tokenGetter = null;
