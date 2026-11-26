@@ -37,6 +37,10 @@ export default defineConfig({
   server: {
     host: "0.0.0.0",
     port: 5173,
+    allowedHosts: [
+      "enterpreneurdesk.co",
+      "www.enterpreneurdesk.co",
+    ],
 
     proxy: {
       "/api": {
@@ -45,4 +49,5 @@ export default defineConfig({
       },
     },
   },
+
 });

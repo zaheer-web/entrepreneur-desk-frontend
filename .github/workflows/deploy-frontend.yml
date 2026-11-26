@@ -1,0 +1,54 @@
+name: Entrepreneur Desk Frontend Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy Frontend to Contabo
+        uses: appleboy/ssh-action@v1.2.2
+
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          port: 22
+
+          script: |
+            echo "Starting Frontend Deployment..."
+
+            cd /var/www/entrepreneur-desk/frontend
+
+            git pull origin main
+
+            echo "Creating Frontend Environment..."
+
+            cat > .env.production << 'EOF'
+            VITE_CLERK_PUBLISHABLE_KEY=pk_test_bW92ZWQtZG9lLTkwNTEuY2xlcmsuYWNjb3VudHMuZGV2JA
+            VITE_API_URL=https://api.enterpreneurdesk.co/api
+            EOF
+
+            echo "Installing Dependencies..."
+
+            npm install
+
+            echo "Building Frontend..."
+
+            npm run build
+
+            echo "Starting Frontend on Port 3080..."
+
+            pm2 delete entrepreneur-desk-frontend || true
+
+            pm2 serve dist 3080 --spa --name entrepreneur-desk-frontend
+
+            pm2 save
+
+            echo "Frontend Deployment Successful!"
