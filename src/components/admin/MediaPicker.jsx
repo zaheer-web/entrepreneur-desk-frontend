@@ -39,7 +39,7 @@ import { cn } from "@/libs/utils";
 // ==========================================
 
 const API_BASE = (
-  import.meta.env.VITE_API_BASE_URL || "/api"
+  import.meta.env.VITE_API_URL || "https://api.entrepreneurdesk.co/api"
 ).replace(/\/+$/, "");
 
 const API_ORIGIN = API_BASE.replace(/\/api$/, "");
