@@ -32,7 +32,7 @@ jobs:
 
             cat > .env.production << 'EOF'
             VITE_CLERK_PUBLISHABLE_KEY=pk_test_bW92ZWQtZG9lLTkwNTEuY2xlcmsuYWNjb3VudHMuZGV2JA
-            VITE_API_URL=https://api.enterpreneurdesk.co/api
+            VITE_API_URL=https://api.entrepreneurdesk.co/api
             EOF
 
             echo "Installing Dependencies..."
