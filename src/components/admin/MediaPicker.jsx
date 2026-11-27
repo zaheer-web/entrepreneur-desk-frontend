@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+
 import {
   useMutation,
   useQuery,
@@ -35,32 +36,115 @@ import {
 import { cn } from "@/libs/utils";
 
 // ==========================================
-// API IMAGE URL HANDLER
+// MEDIA URL HANDLER
 // ==========================================
 
-const API_BASE = (
-  import.meta.env.VITE_API_URL || "https://api.entrepreneurdesk.co/api"
-).replace(/\/+$/, "");
+// Use frontend domain so Nginx proxies /api/media
+// to the backend media endpoint.
 
-const API_ORIGIN = API_BASE.replace(/\/api$/, "");
+const API_MEDIA_PREFIX = "/api/media/";
 
-const getMediaUrl = (url) => {
-  if (!url || typeof url !== "string") {
-    return "";
+const getMediaUrl = (item) => {
+  if (!item) return "";
+
+  const value =
+    typeof item === "string"
+      ? item
+      : item.url || "";
+
+  const id =
+    typeof item === "object"
+      ? item.id || item._id
+      : null;
+
+  // If URL is missing but media ID exists
+  if (!value && id) {
+    return `${API_MEDIA_PREFIX}${id}`;
   }
 
-  // Already absolute URL
-  if (
-    url.startsWith("http://") ||
-    url.startsWith("https://") ||
-    url.startsWith("data:") ||
-    url.startsWith("blob:")
-  ) {
-    return url;
+  if (!value) return "";
+
+  // Keep data and blob URLs unchanged
+  if (/^(data:|blob:)/i.test(value)) {
+    return value;
   }
 
-  // Relative backend image URL
-  return `${API_ORIGIN}${url.startsWith("/") ? url : `/${url}`}`;
+  // Convert backend absolute media URL to same-origin URL
+  try {
+    const parsed = new URL(value, window.location.origin);
+
+    if (
+      parsed.pathname.startsWith("/api/media/") &&
+      (
+        parsed.hostname === "api.entrepreneurdesk.co" ||
+        parsed.hostname === "entrepreneurdesk.co" ||
+        parsed.hostname === "www.entrepreneurdesk.co"
+      )
+    ) {
+      return `${parsed.pathname}${parsed.search}`;
+    }
+
+    // Preserve other absolute external URLs
+    if (/^https?:\/\//i.test(value)) {
+      return value;
+    }
+  } catch {
+    // Continue with relative URL handling
+  }
+
+  // Relative media URL
+  if (value.startsWith("/")) {
+    return value;
+  }
+
+  return `/${value}`;
+};
+
+// Normalize media object returned by backend
+const normalizeMedia = (item) => {
+  if (!item || typeof item !== "object") {
+    return null;
+  }
+
+  const id = item.id || item._id || "";
+
+  const url = getMediaUrl({
+    ...item,
+    id,
+  });
+
+  if (!url) return null;
+
+  return {
+    ...item,
+    id: id || url,
+    url,
+    filename:
+      item.filename ||
+      item.originalname ||
+      item.name ||
+      "Uploaded image",
+    alt: item.alt || "",
+  };
+};
+
+// Handle different API response formats
+const normalizeMediaList = (response) => {
+  let items = [];
+
+  if (Array.isArray(response)) {
+    items = response;
+  } else if (Array.isArray(response?.items)) {
+    items = response.items;
+  } else if (Array.isArray(response?.data)) {
+    items = response.data;
+  } else if (Array.isArray(response?.media)) {
+    items = response.media;
+  }
+
+  return items
+    .map(normalizeMedia)
+    .filter(Boolean);
 };
 
 // ==========================================
@@ -75,7 +159,7 @@ export function useMediaUpload() {
       return apiUpload("/admin/media", file);
     },
 
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({
         queryKey: ["admin-media"],
       });
@@ -100,52 +184,83 @@ export function MediaPicker({
   onClose,
   onSelect,
 }) {
+  const [picked, setPicked] = useState(null);
+
+  const fileRef = useRef(null);
+
+  // Fetch gallery images
   const media = useQuery({
     queryKey: ["admin-media"],
-    queryFn: () => apiGet("/admin/media"),
+
+    queryFn: async () => {
+      const response = await apiGet("/admin/media");
+
+      return normalizeMediaList(response);
+    },
+
     enabled: open,
+
+    staleTime: 0,
+
+    refetchOnWindowFocus: true,
   });
 
   const upload = useMediaUpload();
 
-  const fileRef = useRef(null);
+  // ==========================================
+  // UPLOAD IMAGE
+  // ==========================================
 
-  const [picked, setPicked] = useState(null);
-
-  // Upload image
   const handleFileChange = (event) => {
     const file = event.target.files?.[0];
 
     if (!file) return;
 
-    // Validate image
+    // Validate image type
     if (!file.type.startsWith("image/")) {
       toast.error("Please select a valid image");
+
       event.target.value = "";
+
       return;
     }
 
     // Upload image
     upload.mutate(file, {
-      onSuccess: (response) => {
-        if (!response?.url) {
-          toast.error("Image uploaded but URL was not returned");
+      onSuccess: async (response) => {
+        const uploadedImage = normalizeMedia(response);
+
+        if (!uploadedImage?.url) {
+          toast.error(
+            "Image uploaded but image URL was not returned"
+          );
+
           return;
         }
 
-        setPicked(response);
+        // Select newly uploaded image
+        setPicked(uploadedImage);
 
         // Refresh gallery
-        media.refetch();
+        await media.refetch();
+
+        toast.success("Image uploaded and selected");
       },
     });
 
     event.target.value = "";
   };
 
-  // Select image
+  // ==========================================
+  // SELECT IMAGE
+  // ==========================================
+
   const handleSelect = () => {
-    if (!picked?.url) return;
+    if (!picked?.url) {
+      toast.error("Please select an image");
+
+      return;
+    }
 
     onSelect({
       url: picked.url,
@@ -153,6 +268,17 @@ export function MediaPicker({
     });
 
     setPicked(null);
+
+    onClose();
+  };
+
+  // ==========================================
+  // CLOSE DIALOG
+  // ==========================================
+
+  const handleClose = () => {
+    setPicked(null);
+
     onClose();
   };
 
@@ -161,8 +287,7 @@ export function MediaPicker({
       open={open}
       onOpenChange={(value) => {
         if (!value) {
-          onClose();
-          setPicked(null);
+          handleClose();
         }
       }}
     >
@@ -211,9 +336,16 @@ export function MediaPicker({
               Loading gallery...
             </p>
           ) : media.isError ? (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <p className="text-sm text-red-400">
                 Unable to load gallery.
+              </p>
+
+              <p className="break-all text-xs text-zinc-500">
+                {errorMessage(
+                  media.error,
+                  "Please check your connection and login."
+                )}
               </p>
 
               <button
@@ -229,34 +361,47 @@ export function MediaPicker({
               No images yet. Upload one to get started.
             </p>
           ) : (
-            <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               {(media.data ?? []).map((item) => (
                 <button
                   key={item.id}
                   type="button"
                   onClick={() => setPicked(item)}
                   className={cn(
-                    "group relative aspect-square overflow-hidden border-2 transition-colors duration-150",
+                    "group relative aspect-square overflow-hidden border-2 bg-[#101012] transition-colors duration-150",
                     picked?.id === item.id
                       ? "border-gold"
                       : "border-transparent hover:border-gold/40"
                   )}
                   data-testid={`media-picker-item-${item.id}`}
+                  aria-label={`Select ${item.filename}`}
+                  aria-pressed={picked?.id === item.id}
                 >
                   <img
-                    src={getMediaUrl(item.url)}
-                    alt={item.alt || ""}
+                    src={item.url}
+                    alt={item.alt || item.filename}
                     loading="lazy"
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
                     onError={(event) => {
-                      event.currentTarget.style.opacity = "0.3";
+                      console.error(
+                        "Media image failed:",
+                        item.url
+                      );
+
+                      event.currentTarget.style.display = "none";
                     }}
                   />
 
+                  {/* SELECTED OVERLAY */}
+
                   {picked?.id === item.id && (
-                    <span className="absolute right-1.5 top-1.5 grid size-6 place-items-center rounded-full bg-gold text-ink">
-                      <Check className="size-3.5" />
-                    </span>
+                    <>
+                      <span className="absolute inset-0 border-2 border-gold bg-gold/10" />
+
+                      <span className="absolute right-2 top-2 grid size-7 place-items-center rounded-full bg-gold text-ink shadow-lg">
+                        <Check className="size-4" />
+                      </span>
+                    </>
                   )}
                 </button>
               ))}
@@ -302,19 +447,29 @@ export function ImageInput({
 
   const imageValue = value || "";
 
-  // Handle image selection
+  // ==========================================
+  // HANDLE IMAGE SELECTION
+  // ==========================================
+
   const handleImageSelect = (image) => {
+    if (!image?.url) {
+      toast.error("Invalid image selected");
+
+      return;
+    }
+
     onChange(image.url);
 
     if (image.alt) {
       onAlt?.(image.alt);
     }
+
+    toast.success("Image selected successfully");
   };
 
   return (
     <div className="space-y-2">
       <div className="flex items-start gap-3">
-
         {/* IMAGE PREVIEW */}
 
         <div className="grid size-20 shrink-0 place-items-center overflow-hidden border border-hairline bg-[#101012]">
@@ -326,6 +481,11 @@ export function ImageInput({
               data-testid={`${testId}-preview`}
               onError={(event) => {
                 event.currentTarget.style.opacity = "0.3";
+
+                console.error(
+                  "Image preview failed:",
+                  event.currentTarget.src
+                );
               }}
             />
           ) : (
@@ -336,9 +496,7 @@ export function ImageInput({
         {/* IMAGE CONTROLS */}
 
         <div className="flex flex-1 flex-col gap-2">
-
           <div className="flex flex-wrap gap-2">
-
             {/* GALLERY BUTTON */}
 
             <button
@@ -348,6 +506,7 @@ export function ImageInput({
               data-testid={`${testId}-choose-btn`}
             >
               <ImagePlus className="size-3.5" />
+
               Choose from gallery
             </button>
 
@@ -357,14 +516,18 @@ export function ImageInput({
               <button
                 type="button"
                 className={ghostBtn}
-                onClick={() => onChange("")}
+                onClick={() => {
+                  onChange("");
+
+                  onAlt?.("");
+                }}
                 data-testid={`${testId}-clear-btn`}
               >
                 <X className="size-3.5" />
+
                 Remove
               </button>
             )}
-
           </div>
 
           {/* IMAGE URL INPUT */}
@@ -379,7 +542,6 @@ export function ImageInput({
             className={inputCls}
             data-testid={`${testId}-url-input`}
           />
-
         </div>
       </div>
 
