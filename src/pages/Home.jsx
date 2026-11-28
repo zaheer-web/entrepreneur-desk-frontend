@@ -119,148 +119,192 @@ export default function Home() {
 
   return (
     <div>
-      {/* HERO SECTION */}
-      <section className="mx-auto max-w-7xl px-4 pb-16 pt-10 sm:px-6 lg:px-8 lg:pt-14">
-        <div className="mb-8 flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-          <span data-testid="home-edition-label">
-            The Founders' Edition
-          </span>
+     {/* HERO SECTION */}
+<section className="mx-auto max-w-7xl px-4 pb-16 pt-10 sm:px-6 lg:px-8 lg:pt-14">
 
-          <span className="hidden sm:inline">
-            Stories · Interviews · Lists · News
-          </span>
-        </div>
+  {/* SECTION HEADER */}
+  <div className="mb-8 flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+    <span data-testid="home-edition-label">
+      The Founders' Edition
+    </span>
 
-        <div className="grid gap-10 lg:grid-cols-12">
-          {/* FEATURED STORY */}
-          <div className="lg:col-span-8">
-            {stories.isLoading ? (
-              <SkeletonBlock className="aspect-[16/11] w-full" />
-            ) : featured ? (
-              <Link
-                to={`/story/${featured.slug}`}
-                className="group relative block overflow-hidden"
-                data-testid="home-featured-story"
-              >
-                <div className="relative aspect-[4/5] sm:aspect-[16/11]">
-                  {featured.image && (
-                    <img
-                      src={featured.image}
-                      alt={featured.person || featured.title}
-                      className="h-full w-full object-cover object-top grayscale-[35%] transition-[transform,filter] duration-1000 ease-out group-hover:scale-[1.02] group-hover:grayscale-0"
-                    />
-                  )}
+    <span className="hidden sm:inline">
+      Stories · Interviews · Lists · News
+    </span>
+  </div>
 
-                  <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(13,13,14,0.95)_0%,rgba(13,13,14,0.6)_45%,rgba(13,13,14,0.1)_100%)]" />
+  <div className="grid gap-10 lg:grid-cols-12">
 
-                  <div className="absolute inset-x-0 bottom-0 animate-fade-up p-6 sm:p-10">
-                    <span className="inline-flex rounded-full border border-gold/50 bg-ink/60 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-gold backdrop-blur">
-                      Cover Story · {featured.category}
-                    </span>
+    {/* FEATURED STORY */}
+    <div className="lg:col-span-8">
 
-                    <h1 className="mt-5 max-w-3xl font-heading text-4xl font-semibold leading-[1.02] tracking-tight text-white sm:text-6xl">
-                      {featured.title}
-                    </h1>
+      {stories.isLoading ? (
 
-                    <p className="mt-5 max-w-2xl font-serif text-base italic leading-relaxed text-zinc-300 sm:text-lg">
-                      {featured.dek || featured.summary}
-                    </p>
+        <SkeletonBlock className="aspect-[16/11] w-full" />
 
-                    <p className="mt-6 font-mono text-[11px] uppercase tracking-[0.18em] text-zinc-400">
-                      By {featured.author || featured.person}
-                      {" · "}
-                      {featured.read_minutes || 0} min read
-                    </p>
-                  </div>
-                </div>
-              </Link>
-            ) : (
-              <div className="flex aspect-[16/11] items-center justify-center border border-hairline text-muted-foreground">
-                No featured story available.
-              </div>
+      ) : featured ? (
+
+        <Link
+          to={`/story/${featured.slug}`}
+          className="group block"
+          data-testid="home-featured-story"
+        >
+
+          {/* FEATURED IMAGE - ORIGINAL HEIGHT */}
+          <div className="relative aspect-[4/5] overflow-hidden bg-zinc-900 sm:aspect-[16/11]">
+
+            {featured.image && (
+              <img
+                src={featured.image}
+                alt={featured.person || featured.title}
+                className="h-full w-full object-cover object-top grayscale-[35%] transition-[transform,filter] duration-1000 ease-out group-hover:scale-[1.02] group-hover:grayscale-0"
+              />
             )}
+
           </div>
 
-          {/* BRIEFING */}
-          <aside
-            className="lg:col-span-4"
-            data-testid="home-briefing"
-          >
-            <div className="flex items-center justify-between border-b border-gold/40 pb-3">
-              <Eyebrow>The Briefing</Eyebrow>
+          {/* STORY CONTENT BELOW IMAGE */}
+          <div className="relative border-b border-hairline py-4 sm:py-5">
 
-              <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-500">
-                Latest
+            {/* CATEGORY */}
+            <span className="inline-flex rounded-full border border-gold/50 bg-gold/10 px-3 py-1 font-mono text-[9px] uppercase tracking-[0.2em] text-gold">
+              Cover Story · {featured.category}
+            </span>
+
+            {/* TITLE */}
+            <h1 className="mt-3 max-w-3xl font-heading text-2xl font-semibold leading-tight tracking-tight text-white transition-colors duration-300 group-hover:text-gold-soft sm:text-4xl">
+              {featured.title}
+            </h1>
+
+            {/* DESCRIPTION */}
+            <p className="mt-2 max-w-2xl font-serif text-sm italic leading-relaxed text-zinc-400 sm:text-base">
+              {featured.dek || featured.summary}
+            </p>
+
+            {/* AUTHOR AND READ TIME */}
+            <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500">
+              <span className="text-gold">
+                By {featured.author || featured.person}
               </span>
-            </div>
 
-            <ol>
-              {stories.isLoading &&
-                Array.from({ length: 5 }).map((_, i) => (
-                  <SkeletonBlock
-                    key={i}
-                    className="my-5 h-16 w-full"
-                  />
-                ))}
+              {" · "}
 
-              {!stories.isLoading &&
-                briefing.map((s, i) => (
-                  <li
-                    key={s.id || s.slug}
-                    className="border-b border-hairline"
-                  >
-                    <Link
-                      to={`/story/${s.slug}`}
-                      className="group flex gap-5 py-5"
-                      data-testid={`home-briefing-item-${i}`}
-                    >
-                      <span className="font-heading text-3xl italic leading-none text-gold/70">
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
+              {featured.read_minutes || 0} min read
+            </p>
 
-                      <div>
-                        <TypeTag story={s} />
+          </div>
 
-                        <p className="mt-2 font-heading text-lg leading-snug text-white transition-colors duration-200 group-hover:text-gold-soft">
-                          {s.title}
-                        </p>
-                      </div>
-                    </Link>
-                  </li>
-                ))}
+        </Link>
 
-              {!stories.isLoading &&
-                briefing.length === 0 && (
-                  <p className="py-6 text-sm text-muted-foreground">
-                    No recent stories available.
-                  </p>
-                )}
-            </ol>
+      ) : (
 
-            <Link
-              to="/get-featured"
-              className="group mt-8 block border border-gold/30 bg-[linear-gradient(135deg,rgba(212,175,55,0.10),transparent_60%)] p-6 transition-colors duration-300 hover:border-gold"
-              data-testid="home-get-featured-card"
-            >
-              <Eyebrow>For Founders</Eyebrow>
-
-              <p className="mt-3 font-heading text-2xl leading-tight text-white">
-                Building something remarkable?
-              </p>
-
-              <p className="mt-2 text-sm text-muted-foreground">
-                Tell us your story. Our editors read every submission.
-              </p>
-
-              <span className="mt-5 inline-flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.15em] text-gold">
-                Get Featured
-
-                <ArrowUpRight className="size-4 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-              </span>
-            </Link>
-          </aside>
+        <div className="flex aspect-[16/11] items-center justify-center border border-hairline text-muted-foreground">
+          No featured story available.
         </div>
-      </section>
+
+      )}
+
+    </div>
+
+    {/* BRIEFING */}
+    <aside
+      className="lg:col-span-4"
+      data-testid="home-briefing"
+    >
+
+      <div className="flex items-center justify-between border-b border-gold/40 pb-3">
+
+        <Eyebrow>The Briefing</Eyebrow>
+
+        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-500">
+          Latest
+        </span>
+
+      </div>
+
+      <ol>
+
+        {stories.isLoading &&
+          Array.from({ length: 5 }).map((_, i) => (
+            <SkeletonBlock
+              key={i}
+              className="my-5 h-16 w-full"
+            />
+          ))}
+
+        {!stories.isLoading &&
+          briefing.map((s, i) => (
+
+            <li
+              key={s.id || s.slug}
+              className="border-b border-hairline"
+            >
+
+              <Link
+                to={`/story/${s.slug}`}
+                className="group flex gap-5 py-5"
+                data-testid={`home-briefing-item-${i}`}
+              >
+
+                <span className="font-heading text-3xl italic leading-none text-gold/70">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+
+                <div>
+
+                  <TypeTag story={s} />
+
+                  <p className="mt-2 font-heading text-lg leading-snug text-white transition-colors duration-200 group-hover:text-gold-soft">
+                    {s.title}
+                  </p>
+
+                </div>
+
+              </Link>
+
+            </li>
+
+          ))}
+
+        {!stories.isLoading && briefing.length === 0 && (
+          <p className="py-6 text-sm text-muted-foreground">
+            No recent stories available.
+          </p>
+        )}
+
+      </ol>
+
+      {/* GET FEATURED CARD */}
+      <Link
+        to="/get-featured"
+        className="group mt-8 block border border-gold/30 bg-[linear-gradient(135deg,rgba(212,175,55,0.10),transparent_60%)] p-6 transition-colors duration-300 hover:border-gold"
+        data-testid="home-get-featured-card"
+      >
+
+        <Eyebrow>For Founders</Eyebrow>
+
+        <p className="mt-3 font-heading text-2xl leading-tight text-white">
+          Building something remarkable?
+        </p>
+
+        <p className="mt-2 text-sm text-muted-foreground">
+          Tell us your story. Our editors read every submission.
+        </p>
+
+        <span className="mt-5 inline-flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.15em] text-gold">
+
+          Get Featured
+
+          <ArrowUpRight className="size-4 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+
+        </span>
+
+      </Link>
+
+    </aside>
+
+  </div>
+</section>
 
       {/* NEWS TICKER */}
       <NewsTicker items={newsItems} />
